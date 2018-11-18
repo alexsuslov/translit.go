@@ -7,7 +7,6 @@ package translit
 
 import (
 	"unicode"
-	"strings"
 )
 
 // Mapping of Russian Cyrillic characters to ASCII Latin.
@@ -58,8 +57,8 @@ var CyrillicLatin = map[int] string{
 	'д': "d",
 	'ђ': "đ",
 	'е': "e",
-	'ё': "ë",
-	'ж': "ž",
+	'ё': "yo",
+	'ж': "zh",
 	'з': "z",
 	'ѕ': "ẑ",
 	'и': "i",
@@ -83,10 +82,10 @@ var CyrillicLatin = map[int] string{
 	'ф': "f",
 	'х': "h",
 	'ц': "c",
-	'ч': "č",
+	'ч': "ch",
 	'џ': "dž",
-	'ш': "š",
-	'щ': "šč",
+	'ш': "sh",
+	'щ': "sch",
 	'ъ': "'",
 	'ы': "y",
 	'ь': "",
@@ -97,33 +96,21 @@ var CyrillicLatin = map[int] string{
 	'я': "ja",	
 }
 
-// ToLatin returns a string transliterated using provided mapping table.
-// Runes that cannot be transliterated inserted as-is.
-func ToLatin(s string, table map[int]string) string {
-	runes := []int(s)
-	out := make([]int, 0, len(s))
-	for i, rune := range runes {
-		if tr, ok := table[unicode.ToLower(rune)]; ok {
-			if tr == "" {
-				continue
-			}
-			if unicode.IsUpper(rune) {
-				// Correctly translate case of successive characters:
-				// ЩИ -> SCHI
-				// Щи -> Schi
-				if i+1 < len(runes) && !unicode.IsUpper(runes[i+1]) {
-					t := []int(tr)
-					t[0] = unicode.ToUpper(t[0])
-					out = append(out, t...)
-					continue
-				}
-				out = append(out, []int(strings.ToUpper(tr))...)
-				continue
-			}
-			out = append(out, []int(tr)...)
+func Translit(s string, withAdditionalSymbols bool) string {
+	var result string
+	for _, r := range s {
+		if unicode.IsUpper(r) {
+			r = unicode.ToLower(r)
+		}
+		if cyrillic, exist := CyrillicLatin[int(r)]; exist {
+			result += cyrillic
 		} else {
-			out = append(out, rune)
+
+			unicode.ToLower(r)
+			if withAdditionalSymbols && (unicode.IsSpace(r) || unicode.IsMark(r) || unicode.IsPunct(r)) {
+				result += string(r)
+			}
 		}
 	}
-	return string(out)
+	return result
 }
